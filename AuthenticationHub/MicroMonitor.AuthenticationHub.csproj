@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\MessageQueueUtils\MicroMonitor.MessageQueueUtils.csproj" />
+    <ProjectReference Include="..\MicroMonitor.Data\MicroMonitor.Data.csproj" />
   </ItemGroup>
 
 </Project>

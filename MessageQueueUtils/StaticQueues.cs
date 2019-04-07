@@ -11,7 +11,5 @@
         public const string IsAuthenticated = "MM_Auth_Check";
 
         public const string IsAuthenticatedReply = "MM_Auth_Reply";
-
-        public const string CreateAuthentication = "MM_Auth_Create";
     }
 }

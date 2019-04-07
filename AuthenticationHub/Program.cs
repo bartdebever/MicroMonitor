@@ -16,13 +16,12 @@ namespace MicroMonitor.AuthenticationHub
 
         private static RabbitMqProducer _producer;
 
-        private static RabbitMqProducer _authCreateProducer;
 
         public static void Main(string[] args)
         {
             SetupProducer();
             SetupConsumer();
-            SetupAuthCreateProducer();
+
             _receiver.Run();
         }
 
@@ -31,13 +30,6 @@ namespace MicroMonitor.AuthenticationHub
             _producer = new RabbitMqProducer();
             _producer.Connect();
             _producer.BindQueue(StaticQueues.GetAuth);
-        }
-
-        private static void SetupAuthCreateProducer()
-        {
-            _authCreateProducer = new RabbitMqProducer();
-            _authCreateProducer.Connect();
-            _authCreateProducer.BindQueue(StaticQueues.CreateAuthentication);
         }
 
         private static void SetupConsumer()

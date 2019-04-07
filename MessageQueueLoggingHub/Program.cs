@@ -1,20 +1,17 @@
-﻿using System.Text;
-
-using MicroMonitor.MessageQueueUtils;
-using MicroMonitor.MessageQueueUtils.Messages;
-
-using Newtonsoft.Json;
-
+﻿using MicroMonitor.MessageQueueUtils;
 using RabbitMQ.Client.Events;
-
 using Serilog;
+using System.Text;
 
 namespace MicroMonitor.MessageQueueLoggingHub
 {
     class Program
     {
+        private static AuthenticationFlow _authenticationFlow;
+
         static void Main(string[] args)
         {
+            _authenticationFlow = new AuthenticationFlow();
             CreateLogger();
 
             Log.Debug("Starting new Receiver for queue: {0}", StaticQueues.LoggingQueue);
@@ -31,9 +28,23 @@ namespace MicroMonitor.MessageQueueLoggingHub
         {
             var body = e.Body;
             var message = Encoding.UTF8.GetString(body);
+            if (e.BasicProperties.Headers == null || !e.BasicProperties.Headers.ContainsKey("token"))
+            {
+                Log.Warning("Request without headers");
+                return;
+            }
 
-            var messageObject = JsonConvert.DeserializeObject<LoggingMessage>(message);
-            Log.Information("{Sender} from group {Group}: {Body}", messageObject.Sender, messageObject.Group, messageObject.Body);
+            var token = e.BasicProperties.Headers["token"];
+
+            if (!(token is byte[] bytes))
+            {
+                return;
+            }
+
+            var stringToken = Encoding.UTF8.GetString(bytes);
+
+            _authenticationFlow.CheckAuthentication(message, stringToken);
+
         }
 
         /// <summary>

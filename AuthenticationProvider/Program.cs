@@ -7,6 +7,10 @@ using System;
 using System.Linq;
 using System.Text;
 
+using MicroMonitor.MessageQueueUtils.Messages;
+
+using Newtonsoft.Json;
+
 namespace AuthenticationProvider
 {
     class Program
@@ -21,9 +25,6 @@ namespace AuthenticationProvider
             SetupAuthReceiver();
 
             _authReceiver.Run();
-
-
-            Console.WriteLine("Hello World!");
         }
 
         private static void SetupAuthProducer()
@@ -46,10 +47,13 @@ namespace AuthenticationProvider
             var body = e.Body;
             var message = Encoding.UTF8.GetString(body);
 
+            var isAuthenticatedMessage = JsonConvert.DeserializeObject<IsAuthenticatedMessage>(message);
+
+            Console.WriteLine("Checking authentication for {0}", isAuthenticatedMessage.Token);
             bool isAuth;
             using (var context = new MonitorContext())
             {
-                isAuth = context.Tokens.Any(x => x.Token == message);
+                isAuth = context.Tokens.Any(x => x.Token == isAuthenticatedMessage.Token);
             }
 
             var properties = new BasicProperties
@@ -57,7 +61,11 @@ namespace AuthenticationProvider
                 CorrelationId = e.BasicProperties.MessageId
             };
 
-            _authProducer.SendMessage(isAuth.ToString(), properties);
+            isAuthenticatedMessage.IsAuthenticated = isAuth;
+
+            var json = JsonConvert.SerializeObject(isAuthenticatedMessage);
+
+            _authProducer.SendMessage(json, properties);
         }
     }
 }

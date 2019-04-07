@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Linq;
+using System.Text;
 
 using Newtonsoft.Json;
 
@@ -41,7 +42,14 @@ namespace MicroMonitor.MessageQueueUtils
         public void SendMessage(string message, IBasicProperties properties = null)
         {
             var body = Encoding.UTF8.GetBytes(message);
-            Channel.BasicPublish(string.Empty, _queue, properties, body);
+            IBasicProperties newProperties = null;
+            if (properties != null)
+            {
+                newProperties = Channel.CreateBasicProperties();
+                newProperties.Headers = properties.Headers;
+            }
+
+            Channel.BasicPublish(string.Empty, _queue, newProperties, body);
         }
 
         /// <summary>
