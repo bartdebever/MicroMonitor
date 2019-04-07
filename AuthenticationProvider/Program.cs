@@ -21,8 +21,10 @@ namespace AuthenticationProvider
         {
             SetupCreateReceiver();
             SetupAuthProducer();
+            SetupAuthReceiver();
 
             _createReceiver.Run();
+            _authReceiver.Run();
 
 
             Console.WriteLine("Hello World!");

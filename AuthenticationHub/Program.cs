@@ -9,30 +9,40 @@ namespace MicroMonitor.AuthenticationHub
 {
     public class Program
     {
-        private static RabbitMqReceiver receiver;
+        private static RabbitMqReceiver _receiver;
 
-        private static RabbitMqProducer producer;
+        private static RabbitMqProducer _producer;
+
+        private static RabbitMqProducer _authCreateProducer;
 
         public static void Main(string[] args)
         {
             SetupProducer();
             SetupConsumer();
-            receiver.Run();
+            SetupAuthCreateProducer();
+            _receiver.Run();
         }
 
         private static void SetupProducer()
         {
-            producer = new RabbitMqProducer();
-            producer.Connect();
-            producer.BindQueue(StaticQueues.GetAuth);
+            _producer = new RabbitMqProducer();
+            _producer.Connect();
+            _producer.BindQueue(StaticQueues.GetAuth);
+        }
+
+        private static void SetupAuthCreateProducer()
+        {
+            _authCreateProducer = new RabbitMqProducer();
+            _authCreateProducer.Connect();
+            _authCreateProducer.BindQueue(StaticQueues.CreateAuthentication);
         }
 
         private static void SetupConsumer()
         {
-            receiver = new RabbitMqReceiver();
-            receiver.Connect();
-            receiver.BindQueue(StaticQueues.RequestAuth);
-            receiver.DeclareReceived(ConsumerOnReceived);
+            _receiver = new RabbitMqReceiver();
+            _receiver.Connect();
+            _receiver.BindQueue(StaticQueues.RequestAuth);
+            _receiver.DeclareReceived(ConsumerOnReceived);
         }
 
         private static void ConsumerOnReceived(object sender, BasicDeliverEventArgs e)
@@ -42,8 +52,10 @@ namespace MicroMonitor.AuthenticationHub
 
             // TODO check secret
             var token = TokenProducer.ProduceToken();
+            _authCreateProducer.SendMessage(token);
+
             var properties = new BasicProperties { CorrelationId = e.BasicProperties.MessageId };
-            producer.SendMessage(token, properties);
+            _producer.SendMessage(token, properties);
         }
     }
 }
