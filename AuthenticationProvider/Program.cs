@@ -11,6 +11,8 @@ using MicroMonitor.MessageQueueUtils.Messages;
 
 using Newtonsoft.Json;
 
+using Serilog;
+
 namespace AuthenticationProvider
 {
     class Program
@@ -21,10 +23,21 @@ namespace AuthenticationProvider
 
         static void Main(string[] args)
         {
+            ConfigureLogger();
+            Log.Information("Setting up MicroMonitor Authentication Provider");
             SetupAuthProducer();
             SetupAuthReceiver();
 
             _authReceiver.Run();
+            Log.Information("Setup complete, waiting for request.");
+        }
+
+        private static void ConfigureLogger()
+        {
+            Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Debug()
+                .WriteTo.Console()
+                .CreateLogger();
         }
 
         private static void SetupAuthProducer()
@@ -49,7 +62,7 @@ namespace AuthenticationProvider
 
             var isAuthenticatedMessage = JsonConvert.DeserializeObject<IsAuthenticatedMessage>(message);
 
-            Console.WriteLine("Checking authentication for {0}", isAuthenticatedMessage.Token);
+            Log.Information("Checking authentication for token \"{Token}\"", isAuthenticatedMessage.Token);
             bool isAuth;
             using (var context = new MonitorContext())
             {

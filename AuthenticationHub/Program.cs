@@ -8,6 +8,8 @@ using MicroMonitor.MessageQueueUtils.Storage;
 using RabbitMQ.Client.Events;
 using RabbitMQ.Client.Framing;
 
+using Serilog;
+
 namespace MicroMonitor.AuthenticationHub
 {
     public class Program
@@ -19,10 +21,21 @@ namespace MicroMonitor.AuthenticationHub
 
         public static void Main(string[] args)
         {
+            ConfigureLogger();
+            Log.Information("Starting MicroMonitor Authentication Provider");
             SetupProducer();
             SetupConsumer();
 
             _receiver.Run();
+            Log.Information("Setup done, waiting for messages.");
+        }
+
+        private static void ConfigureLogger()
+        {
+            Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Debug()
+                .WriteTo.Console()
+                .CreateLogger();
         }
 
         private static void SetupProducer()
@@ -54,6 +67,7 @@ namespace MicroMonitor.AuthenticationHub
                                 AuthenticatedAt = DateTime.Now
                             };
 
+            Log.Information("Creating new token.");
             using (var context = new MonitorContext())
             {
                 context.Tokens.Add(tokenObject);
