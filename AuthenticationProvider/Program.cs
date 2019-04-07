@@ -11,19 +11,15 @@ namespace AuthenticationProvider
 {
     class Program
     {
-        private static RabbitMqReceiver _createReceiver;
-
         private static RabbitMqProducer _authProducer;
 
         private static RabbitMqReceiver _authReceiver;
 
         static void Main(string[] args)
         {
-            SetupCreateReceiver();
             SetupAuthProducer();
             SetupAuthReceiver();
 
-            _createReceiver.Run();
             _authReceiver.Run();
 
 
@@ -45,14 +41,6 @@ namespace AuthenticationProvider
             _authReceiver.DeclareReceived(IsAuthenticatedOnReceived);
         }
 
-        private static void SetupCreateReceiver()
-        {
-            _createReceiver = new RabbitMqReceiver();
-            _createReceiver.Connect();
-            _createReceiver.BindQueue(StaticQueues.CreateAuthentication);
-            _createReceiver.DeclareReceived(ConsumerOnReceived);
-        }
-
         private static void IsAuthenticatedOnReceived(object sender, BasicDeliverEventArgs e)
         {
             var body = e.Body;
@@ -70,24 +58,6 @@ namespace AuthenticationProvider
             };
 
             _authProducer.SendMessage(isAuth.ToString(), properties);
-        }
-
-        private static void ConsumerOnReceived(object sender, BasicDeliverEventArgs e)
-        {
-            var body = e.Body;
-            var message = Encoding.UTF8.GetString(body);
-
-            var token = new StoredToken
-            {
-                Token = message,
-                AuthenticatedAt = DateTime.Now
-            };
-
-            using (var context = new MonitorContext())
-            {
-                context.Tokens.Add(token);
-                context.SaveChanges();
-            }
         }
     }
 }

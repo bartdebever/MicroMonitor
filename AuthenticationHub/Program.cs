@@ -1,6 +1,9 @@
-﻿using System.Text;
+﻿using System;
+using System.Text;
 
+using MicroMonitor.Data;
 using MicroMonitor.MessageQueueUtils;
+using MicroMonitor.MessageQueueUtils.Storage;
 
 using RabbitMQ.Client.Events;
 using RabbitMQ.Client.Framing;
@@ -52,7 +55,18 @@ namespace MicroMonitor.AuthenticationHub
 
             // TODO check secret
             var token = TokenProducer.ProduceToken();
-            _authCreateProducer.SendMessage(token);
+
+            var tokenObject = new StoredToken
+                            {
+                                Token = token,
+                                AuthenticatedAt = DateTime.Now
+                            };
+
+            using (var context = new MonitorContext())
+            {
+                context.Tokens.Add(tokenObject);
+                context.SaveChanges();
+            }
 
             var properties = new BasicProperties { CorrelationId = e.BasicProperties.MessageId };
             _producer.SendMessage(token, properties);
