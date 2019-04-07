@@ -1,37 +1,49 @@
-﻿using System;
+﻿using System.Text;
 
-using MessageQueueUtils;
-using MessageQueueUtils.Messages;
+using MicroMonitor.MessageQueueUtils;
 
-namespace AuthenticationHub
+using RabbitMQ.Client.Events;
+using RabbitMQ.Client.Framing;
+
+namespace MicroMonitor.AuthenticationHub
 {
     public class Program
     {
+        private static RabbitMqReceiver receiver;
+
+        private static RabbitMqProducer producer;
+
         public static void Main(string[] args)
         {
-            var rabbitMqProducer = new RabbitMqProducer();
-            rabbitMqProducer.Connect();
-            rabbitMqProducer.DeclareQueue("MM_Log");
-            Console.WriteLine("Producer");
-            while (true)
-            {
-                var message = Console.ReadLine();
+            SetupProducer();
+            SetupConsumer();
+            receiver.Run();
+        }
 
-                if (message == "q")
-                {
-                    break;
-                }
+        private static void SetupProducer()
+        {
+            producer = new RabbitMqProducer();
+            producer.Connect();
+            producer.BindQueue(StaticQueues.GetAuth);
+        }
 
-                var payload = new LoggingMessage();
-                payload.Sender = "Bort";
-                payload.Group = "FightCore";
-                payload.Body = message;
+        private static void SetupConsumer()
+        {
+            receiver = new RabbitMqReceiver();
+            receiver.Connect();
+            receiver.BindQueue(StaticQueues.RequestAuth);
+            receiver.DeclareReceived(ConsumerOnReceived);
+        }
 
-                rabbitMqProducer.SendObject(payload);
-            }
+        private static void ConsumerOnReceived(object sender, BasicDeliverEventArgs e)
+        {
+            var body = e.Body;
+            var message = Encoding.UTF8.GetString(body);
 
-            rabbitMqProducer.Disconnect();
-            Console.WriteLine("Hello World!");
+            // TODO check secret
+            var token = TokenProducer.ProduceToken();
+            var properties = new BasicProperties { CorrelationId = e.BasicProperties.MessageId };
+            producer.SendMessage(token, properties);
         }
     }
 }

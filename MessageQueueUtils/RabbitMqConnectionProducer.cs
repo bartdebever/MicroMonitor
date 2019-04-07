@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using RabbitMQ.Client;
 
-using RabbitMQ.Client;
-
-namespace MessageQueueUtils
+namespace MicroMonitor.MessageQueueUtils
 {
     public abstract class RabbitMqConnectionProducer
     {

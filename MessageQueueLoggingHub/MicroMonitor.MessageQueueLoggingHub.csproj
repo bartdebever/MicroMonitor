@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\MessageQueueUtils\MessageQueueUtils.csproj" />
+    <ProjectReference Include="..\MessageQueueUtils\MicroMonitor.MessageQueueUtils.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,10 +1,9 @@
-﻿
-using System;
+﻿using System;
 
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
-namespace MessageQueueUtils
+namespace MicroMonitor.MessageQueueUtils
 {
     public class RabbitMqReceiver : RabbitMqConnectionProducer
     {

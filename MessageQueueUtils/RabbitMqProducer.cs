@@ -1,13 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Runtime.Serialization;
-using System.Text;
+﻿using System.Text;
 
 using Newtonsoft.Json;
 
 using RabbitMQ.Client;
 
-namespace MessageQueueUtils
+namespace MicroMonitor.MessageQueueUtils
 {
     public class RabbitMqProducer : RabbitMqConnectionProducer
     {
@@ -28,7 +25,7 @@ namespace MessageQueueUtils
         /// Declares the queue that the messages will be sent to.
         /// </summary>
         /// <param name="queue">The queue the messages will be sent to.</param>
-        public void DeclareQueue(string queue)
+        public void BindQueue(string queue)
         {
             this._queue = queue;
 
@@ -37,13 +34,14 @@ namespace MessageQueueUtils
         }
 
         /// <summary>
-        /// Sends a text message to the queue.
+        /// Sends a new message to the queue.
         /// </summary>
-        /// <param name="message">The message provided</param>
-        public void SendMessage(string message)
+        /// <param name="message">The message wanting to be sent.</param>
+        /// <param name="properties">The optional properties.</param>
+        public void SendMessage(string message, IBasicProperties properties = null)
         {
             var body = Encoding.UTF8.GetBytes(message);
-            Channel.BasicPublish(string.Empty, _queue, null, body);
+            Channel.BasicPublish(string.Empty, _queue, properties, body);
         }
 
         /// <summary>

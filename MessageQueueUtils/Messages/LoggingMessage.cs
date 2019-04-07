@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Runtime.Serialization;
-using System.Text;
 
-namespace MessageQueueUtils.Messages
+namespace MicroMonitor.MessageQueueUtils.Messages
 {
     [Serializable]
     public class LoggingMessage

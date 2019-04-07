@@ -6,7 +6,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\MessageQueueUtils\MessageQueueUtils.csproj" />
+    <PackageReference Include="Bogus" Version="26.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MessageQueueUtils\MicroMonitor.MessageQueueUtils.csproj" />
   </ItemGroup>
 
 </Project>

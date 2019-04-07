@@ -1,16 +1,15 @@
-﻿using MessageQueueUtils;
-using System;
+﻿using System.Text;
 
-using RabbitMQ.Client.Events;
-using System.Text;
-
-using MessageQueueUtils.Messages;
+using MicroMonitor.MessageQueueUtils;
+using MicroMonitor.MessageQueueUtils.Messages;
 
 using Newtonsoft.Json;
 
+using RabbitMQ.Client.Events;
+
 using Serilog;
 
-namespace MessageQueueLoggingHub
+namespace MicroMonitor.MessageQueueLoggingHub
 {
     class Program
     {
@@ -44,6 +43,7 @@ namespace MessageQueueLoggingHub
         {
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Debug()
+                //TODO Add ElasticSearch with Info level.
                 .WriteTo.Console().CreateLogger();
         }
     }
