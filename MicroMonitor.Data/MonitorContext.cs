@@ -22,6 +22,7 @@ namespace MicroMonitor.Data
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
+            // Rough hardcoded SQL string for now. Should be moved to configuration if this wasn't a PoC.
             optionsBuilder.UseSqlServer("Server=DESKTOP-BORT;Database=MicroMonitor;Trusted_Connection=True;MultipleActiveResultSets=true;");
             base.OnConfiguring(optionsBuilder);
         }

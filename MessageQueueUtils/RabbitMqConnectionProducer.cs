@@ -7,7 +7,7 @@ namespace MicroMonitor.MessageQueueUtils
         private readonly ConnectionFactory _connectionFactory;
 
         protected IModel Channel;
-
+        
         protected IConnection Connection;
 
         /// <summary>

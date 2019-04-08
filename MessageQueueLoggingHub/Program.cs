@@ -5,11 +5,15 @@ using System.Text;
 
 namespace MicroMonitor.MessageQueueLoggingHub
 {
-    class Program
+    public class Program
     {
         private static AuthenticationFlow _authenticationFlow;
 
-        static void Main(string[] args)
+        /// <summary>
+        /// Main method ran when executing the program.
+        /// </summary>
+        /// <param name="args"></param>
+        public static void Main(string[] args)
         {
             _authenticationFlow = new AuthenticationFlow();
             CreateLogger();
@@ -24,16 +28,23 @@ namespace MicroMonitor.MessageQueueLoggingHub
             rabbitMqReceiver.Run();
         }
 
+        /// <summary>
+        /// Method executed when the consumer receives a message.
+        /// </summary>
+        /// <param name="sender">The object that triggered the event.</param>
+        /// <param name="e">The event arguments containing the message.</param>
         private static void ConsumerOnReceived(object sender, BasicDeliverEventArgs e)
         {
             var body = e.Body;
             var message = Encoding.UTF8.GetString(body);
+            // Check if the headers are not null and contain the token.
             if (e.BasicProperties.Headers == null || !e.BasicProperties.Headers.ContainsKey("token"))
             {
                 Log.Warning("Request without headers");
                 return;
             }
 
+            // Extract the token, convert it to a byte array and read it.
             var token = e.BasicProperties.Headers["token"];
 
             if (!(token is byte[] bytes))
@@ -43,6 +54,7 @@ namespace MicroMonitor.MessageQueueLoggingHub
 
             var stringToken = Encoding.UTF8.GetString(bytes);
 
+            // Continue to the authentication flow section.
             _authenticationFlow.CheckAuthentication(message, stringToken);
 
         }

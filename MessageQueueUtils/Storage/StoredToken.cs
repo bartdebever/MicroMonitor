@@ -9,5 +9,20 @@ namespace MicroMonitor.MessageQueueUtils.Storage
         public string Token { get; set; }
 
         public DateTime AuthenticatedAt { get; set; }
+
+        public StoredToken()
+        {
+        }
+
+        public StoredToken(string token) : this (token, DateTime.Now)
+        {
+            
+        }
+
+        public StoredToken(string token, DateTime authenticatedAt)
+        {
+            Token = token;
+            AuthenticatedAt = authenticatedAt;
+        }
     }
 }
