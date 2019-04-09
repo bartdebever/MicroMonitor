@@ -4,9 +4,9 @@ using System.Text;
 
 using MicroMonitor.MessageQueueUtils;
 using MicroMonitor.MessageQueueUtils.Messages;
-
+using MicroMonitor.MessageQueueUtils.Storage;
 using Newtonsoft.Json;
-
+using NETCore.Encrypt;
 using RabbitMQ.Client.Events;
 using RabbitMQ.Client.Framing;
 
@@ -14,6 +14,9 @@ namespace TestProject
 {
     class Program
     {
+        private const string IV = "JYFrNePrBqFm6MEL";
+        private const string KEY = "kf9C224Knj3R3n8VVwJ8lI3QWUQJ1Exy";
+
         private static RabbitMqProducer authProducer;
 
         private static RabbitMqReceiver authReceiver;
@@ -29,10 +32,19 @@ namespace TestProject
 
             authReceiver = new RabbitMqReceiver();
             authReceiver.Connect();
-            authReceiver.BindQueue(StaticQueues.GetAuth);
+            authReceiver.BindQueue("TestApplication");
             authReceiver.DeclareReceived(OnAuthReceived);
             authReceiver.Run();
-            authProducer.SendMessage("Test");
+
+            var service = new Service();
+            service.ApplicationId = "TestApplication";
+            service.GroupId = "FightCore";
+
+            var json = JsonConvert.SerializeObject(service);
+
+            var encrypt = EncryptProvider.AESEncrypt(json, KEY, IV);
+
+            authProducer.SendMessage(encrypt);
 
         }
 
@@ -55,7 +67,7 @@ namespace TestProject
                     break;
                 }
 
-                var payload = new LoggingMessage { Sender = "Bort", Group = "FightCore", Body = message };
+                var payload = new LoggingMessage { Sender = "TestApplication", Group = "FightCore", Body = message };
                 var json = JsonConvert.SerializeObject(payload);
                 var basicProperties =
                     new BasicProperties { Headers = new Dictionary<string, object> { { "token", token } } };

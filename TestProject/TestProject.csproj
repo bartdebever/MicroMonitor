@@ -9,4 +9,10 @@
     <ProjectReference Include="..\MessageQueueUtils\MicroMonitor.MessageQueueUtils.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Reference Include="NETCore.Encrypt">
+      <HintPath>..\..\..\..\.nuget\packages\netcore.encrypt\2.0.7\lib\netstandard2.0\NETCore.Encrypt.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
 </Project>

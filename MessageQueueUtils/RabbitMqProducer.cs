@@ -1,6 +1,9 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using Bogus;
 using Newtonsoft.Json;
 
 using RabbitMQ.Client;
@@ -9,8 +12,9 @@ namespace MicroMonitor.MessageQueueUtils
 {
     public class RabbitMqProducer : RabbitMqConnectionProducer
     {
-        private string _queue;
+        private string _queue = string.Empty;
 
+        private string _exchange = string.Empty;
         /// <inheritdoc />
         public RabbitMqProducer()
         {
@@ -26,12 +30,25 @@ namespace MicroMonitor.MessageQueueUtils
         /// Declares the queue that the messages will be sent to.
         /// </summary>
         /// <param name="queue">The queue the messages will be sent to.</param>
-        public void BindQueue(string queue)
+        public void BindQueue(string queue, bool autoDelete = false)
         {
             this._queue = queue;
 
-            // Declare a non exclusive, non self-deleting queue.
-            Channel.QueueDeclare(queue, false, false, false);
+            // Declare a non exclusive, self-deleting queue.
+            Channel.QueueDeclare(queue, false, false, autoDelete);
+
+            if (!string.IsNullOrWhiteSpace(_exchange))
+            {
+                Channel.QueueBind(queue, _exchange, queue);
+            }
+
+        }
+
+        public void BindExchange(string exchange)
+        {
+            this._exchange = exchange;
+
+            Channel.ExchangeDeclare(exchange, ExchangeType.Fanout, false, false);
         }
 
         /// <summary>
@@ -39,17 +56,21 @@ namespace MicroMonitor.MessageQueueUtils
         /// </summary>
         /// <param name="message">The message wanting to be sent.</param>
         /// <param name="properties">The optional properties.</param>
-        public void SendMessage(string message, IBasicProperties properties = null)
+        public string SendMessage(string message, IBasicProperties properties = null)
         {
+            var faker = new Faker();
+
             var body = Encoding.UTF8.GetBytes(message);
-            IBasicProperties newProperties = null;
+            var newProperties = Channel.CreateBasicProperties();
+            newProperties.MessageId = faker.Random.AlphaNumeric(20);
             if (properties != null)
             {
-                newProperties = Channel.CreateBasicProperties();
                 newProperties.Headers = properties.Headers;
             }
 
-            Channel.BasicPublish(string.Empty, _queue, newProperties, body);
+            Channel.BasicPublish(_exchange, _queue, newProperties, body);
+
+            return newProperties.MessageId;
         }
 
         /// <summary>

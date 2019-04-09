@@ -6,7 +6,7 @@ using RabbitMQ.Client.Framing;
 using System;
 using System.Linq;
 using System.Text;
-
+using Bogus;
 using MicroMonitor.MessageQueueUtils.Messages;
 
 using Newtonsoft.Json;
@@ -54,7 +54,7 @@ namespace AuthenticationProvider
         {
             _authProducer = new RabbitMqProducer();
             _authProducer.Connect();
-            _authProducer.BindQueue(StaticQueues.IsAuthenticatedReply);
+            _authProducer.BindExchange(StaticQueues.IsAuthenticatedReply);
         }
 
         /// <summary>
@@ -76,31 +76,27 @@ namespace AuthenticationProvider
         private static void IsAuthenticatedOnReceived(object sender, BasicDeliverEventArgs e)
         {
             var body = e.Body;
-            var message = Encoding.UTF8.GetString(body);
+            var token = Encoding.UTF8.GetString(body);
 
-            // Gain authentication message from JSON Body.
-            var isAuthenticatedMessage = JsonConvert.DeserializeObject<IsAuthenticatedMessage>(message);
+           
+            Log.Information("Checking authentication for token \"{Token}\"", token);
 
-            Log.Information("Checking authentication for token \"{Token}\"", isAuthenticatedMessage.Token);
-
-            bool isAuth;
+            Service service;
             // Check if it exists in the database.
             using (var context = new MonitorContext())
             {
-                isAuth = context.Tokens.Any(x => x.Token == isAuthenticatedMessage.Token);
+                service = context.Services.FirstOrDefault(x => x.Token == token);
             }
 
-            var properties = new BasicProperties
+            var isAuthenticatedMessage = new IsAuthenticatedMessage
             {
-                CorrelationId = e.BasicProperties.MessageId
+                CorrelationId = e.BasicProperties.MessageId, IsAuthenticated = service != null, Service = service
             };
 
-            isAuthenticatedMessage.IsAuthenticated = isAuth;
-            
             // Send back a JSON message with the authentication status.
             var json = JsonConvert.SerializeObject(isAuthenticatedMessage);
 
-            _authProducer.SendMessage(json, properties);
+            _authProducer.SendMessage(json);
         }
     }
 }

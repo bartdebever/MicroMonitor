@@ -1,28 +1,37 @@
-﻿using MicroMonitor.MessageQueueUtils;
+﻿using System;
+using MicroMonitor.MessageQueueUtils;
 using MicroMonitor.MessageQueueUtils.Messages;
 using Newtonsoft.Json;
 using RabbitMQ.Client.Events;
 using Serilog;
 using System.Collections.Generic;
 using System.Text;
+using System.Timers;
+using Bogus;
+using MicroMonitor.MessageQueueUtils.Storage;
 
 namespace MicroMonitor.MessageQueueLoggingHub
 {
     public class AuthenticationFlow
     {
         // A cache of the authenticated tokens.
-        private readonly HashSet<string> _authenticatedTokens;
+        private readonly Dictionary<string, Service> _authenticatedTokens;
+
+        private readonly Dictionary<string, string> _unprocessed;
 
         private RabbitMqReceiver _replyReceiver;
 
         private RabbitMqProducer _authSender;
+
+        private Timer _timer;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AuthenticationFlow"/> class.
         /// </summary>
         public AuthenticationFlow()
         {
-            _authenticatedTokens = new HashSet<string>();
+            _unprocessed = new Dictionary<string, string>();
+            _authenticatedTokens = new Dictionary<string, Service>();
             SetupSender();
             SetupReceiver();
 
@@ -36,19 +45,21 @@ namespace MicroMonitor.MessageQueueLoggingHub
         /// <param name="token">The token received.</param>
         public void CheckAuthentication(string message, string token)
         {
-            if (_authenticatedTokens.Contains(token))
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                throw new ArgumentNullException(nameof(token));
+            }
+
+            if (_authenticatedTokens.ContainsKey(token))
             {
                 LogMessage(message);
                 return;
             }
 
-            var isAuthenticatedMessage = new IsAuthenticatedMessage
-            {
-                Token = token,
-                LogMessage = message
-            };
 
-            _authSender.SendObject(isAuthenticatedMessage);
+            var messageId = _authSender.SendMessage(token);
+
+            _unprocessed.Add(messageId, message);
         }
 
         /// <summary>
@@ -80,7 +91,9 @@ namespace MicroMonitor.MessageQueueLoggingHub
         {
             _replyReceiver = new RabbitMqReceiver();
             _replyReceiver.Connect();
-            _replyReceiver.BindQueue(StaticQueues.IsAuthenticatedReply);
+            var faker = new Faker();
+            _replyReceiver.BindExchange(StaticQueues.IsAuthenticatedReply);
+            _replyReceiver.BindQueue(faker.Random.AlphaNumeric(15), StaticQueues.IsAuthenticatedReply);
             _replyReceiver.DeclareReceived(ConsumerOnReceived);
         }
 
@@ -97,6 +110,11 @@ namespace MicroMonitor.MessageQueueLoggingHub
             // Deserialize the JSON and check the result.
             var isAuthMessage = JsonConvert.DeserializeObject<IsAuthenticatedMessage>(message);
 
+            if (!_unprocessed.ContainsKey(isAuthMessage.CorrelationId))
+            {
+                return;
+            }
+
             if (!isAuthMessage.IsAuthenticated)
             {
                 Log.Warning("Request without Authentication");
@@ -104,9 +122,12 @@ namespace MicroMonitor.MessageQueueLoggingHub
             }
 
             // Add the token to the cache and log the message.
-            _authenticatedTokens.Add(isAuthMessage.Token);
+            _authenticatedTokens.Add(isAuthMessage.Token, isAuthMessage.Service);
 
-            LogMessage(isAuthMessage.LogMessage);
+            var logMessage = _unprocessed[isAuthMessage.CorrelationId];
+            _unprocessed.Remove(isAuthMessage.CorrelationId);
+
+            LogMessage(logMessage);
         }
     }
 }

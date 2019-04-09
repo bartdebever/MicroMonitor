@@ -6,6 +6,8 @@ using RabbitMQ.Client.Framing;
 using Serilog;
 using System;
 using System.Text;
+using Newtonsoft.Json;
+using NETCore.Encrypt;
 
 namespace MicroMonitor.AuthenticationHub
 {
@@ -13,7 +15,9 @@ namespace MicroMonitor.AuthenticationHub
     {
         private static RabbitMqReceiver _receiver;
 
-        private static RabbitMqProducer _producer;
+        // For testing purposes only.
+        private const string IV = "JYFrNePrBqFm6MEL";
+        private const string KEY = "kf9C224Knj3R3n8VVwJ8lI3QWUQJ1Exy";
 
         /// <summary>
         /// Main method ran when the program starts.
@@ -23,8 +27,6 @@ namespace MicroMonitor.AuthenticationHub
         {
             ConfigureLogger();
             Log.Information("Starting MicroMonitor Authentication Provider");
-
-            SetupProducer();
             SetupConsumer();
 
             _receiver.Run();
@@ -45,11 +47,12 @@ namespace MicroMonitor.AuthenticationHub
         /// <summary>
         /// Sets up the producer to be used.
         /// </summary>
-        private static void SetupProducer()
+        private static RabbitMqProducer SetupProducer(RabbitMqProducer producer, string queue)
         {
-            _producer = new RabbitMqProducer();
-            _producer.Connect();
-            _producer.BindQueue(StaticQueues.GetAuth);
+            producer = new RabbitMqProducer();
+            producer.Connect();
+            producer.BindQueue(queue);
+            return producer;
         }
 
         /// <summary>
@@ -69,31 +72,47 @@ namespace MicroMonitor.AuthenticationHub
             var body = e.Body;
             var message = Encoding.UTF8.GetString(body);
 
-            // TODO check secret
+            string json;
+            try
+            {
+                json = EncryptProvider.AESDecrypt(message, KEY, IV);
+                if (string.IsNullOrWhiteSpace(json))
+                {
+                    throw new ArgumentNullException(nameof(json));
+                }
+            }
+            catch
+            {
+                Log.Warning("Invalid attempt to send message, wrong encryption Key and IV");
+                return;
+            }
+
+            var service = JsonConvert.DeserializeObject<Service>(json);
 
             // Generate a new authentication token.
             var token = TokenProducer.ProduceToken();
 
-            SaveToken(new StoredToken(token));
+            service.Token = token;
 
-            var properties = new BasicProperties
-            {
-                CorrelationId = e.BasicProperties.MessageId
-            };
+            SaveService(service);
 
-            _producer.SendMessage(token, properties);
+            var producer = new RabbitMqProducer();
+            // Assume the service made it's queue and send it away.
+            producer = SetupProducer(producer, service.ApplicationId);
+
+            producer.SendMessage(token);
         }
 
         /// <summary>
-        /// Saves the token to the database.
+        /// Saves the service to the database.
         /// </summary>
-        /// <param name="token">The token object wanting to be saved.</param>
-        private static void SaveToken(StoredToken token)
+        /// <param name="service">The service object wanting to be saved.</param>
+        private static void SaveService(Service service)
         {
-            Log.Information("Creating new token.");
+            Log.Information("Creating new service.");
             using (var context = new MonitorContext())
             {
-                context.Tokens.Add(token);
+                context.Services.Add(service);
                 context.SaveChanges();
             }
         }

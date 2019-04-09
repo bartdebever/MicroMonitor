@@ -22,17 +22,29 @@ namespace MicroMonitor.MessageQueueUtils
         {
         }
 
+        public void BindExchange(string exchange)
+        {
+            Channel.ExchangeDeclare(exchange, ExchangeType.Fanout, false, false);
+        }
+
         /// <summary>
         /// Binds the receiver to a particular queue.
         /// Creating the queue if it doesn't exist in the process.
         /// </summary>
         /// <param name="queue">The queue wanting to be bound to.</param>
-        public void BindQueue(string queue)
+        /// <param name="exchange">The exchange which the queue is based on.</param>
+        public void BindQueue(string queue, string exchange = null)
         {
             this._queue = queue;
 
             // Declare a non exclusive, non self-deleting queue.
+
             Channel.QueueDeclare(queue, false, false, false);
+            if (!string.IsNullOrWhiteSpace(exchange))
+            {
+                Channel.QueueBind(queue, exchange, queue);
+            }
+
 
             _consumer = new EventingBasicConsumer(Channel);
         }
