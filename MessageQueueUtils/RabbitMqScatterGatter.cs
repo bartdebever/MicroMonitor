@@ -109,11 +109,13 @@ namespace MicroMonitor.MessageQueueUtils
 
             _responses.Add(message.Payload);
 
-            if (_responses.Count == _producers.Count)
+            // If we don't have all responses yet, return.
+            if (_responses.Count != _producers.Count)
             {
-                _timer.Stop();
-                EndingAction.Invoke(_responses);
+                return;
             }
+            _timer.Stop();
+            EndingAction.Invoke(_responses);
         }
     }
 }
