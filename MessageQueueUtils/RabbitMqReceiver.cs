@@ -9,6 +9,8 @@ namespace MicroMonitor.MessageQueueUtils
     {
         private EventingBasicConsumer _consumer;
 
+        private AsyncEventingBasicConsumer _asyncConsumer;
+
         private string _queue;
 
         /// <inheritdoc />
@@ -42,6 +44,7 @@ namespace MicroMonitor.MessageQueueUtils
 
 
             _consumer = new EventingBasicConsumer(Channel);
+            _asyncConsumer = new AsyncEventingBasicConsumer(Channel);
         }
 
         /// <summary>
@@ -51,6 +54,15 @@ namespace MicroMonitor.MessageQueueUtils
         public void DeclareReceived(EventHandler<BasicDeliverEventArgs> callback)
         {
             _consumer.Received += callback;
+        }
+
+        /// <summary>
+        /// Declares the async method ran when receiving a message.
+        /// </summary>
+        /// <param name="callback">The method wanting to be ran.</param>
+        public void DeclareReceivedAsync(AsyncEventHandler<BasicDeliverEventArgs> callback)
+        {
+            _asyncConsumer.Received += callback;
         }
 
         /// <summary>
