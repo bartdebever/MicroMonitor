@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Bogus;
+using MicroMonitor.Data;
 using MicroMonitor.MessageQueueUtils;
 using MicroMonitor.MessageQueueUtils.Messages;
+using MicroMonitor.MessageQueueUtils.Storage;
 using Serilog;
 
 namespace MicroMonitor.HeathChecks
@@ -17,10 +20,12 @@ namespace MicroMonitor.HeathChecks
         /// <param name="args">Arguments provided by the commandline.</param>
         public static void Main(string[] args)
         {
-            var incomingQueues = new List<string>();
-            var outgoingQueues = new List<string>();
+            var services = GetServices();
+
+            var outgoingQueues = services.Select(x => x.ApplicationId);
+
             var faker = new Faker();
-            _scatterGatter = new RabbitMqScatterGatter(outgoingQueues, incomingQueues) {EndingAction = LogStatus};
+            _scatterGatter = new RabbitMqScatterGatter(outgoingQueues, StaticQueues.HealthCheckReply) {EndingAction = LogStatus};
             var message = new AggregationMessage<string>
             {
                 Payload = "Please report health check",
@@ -35,11 +40,23 @@ namespace MicroMonitor.HeathChecks
         /// Method that will happen once all values are in.
         /// </summary>
         /// <param name="values"></param>
-        private static void LogStatus(List<double> values)
+        private static void LogStatus(Dictionary<string, double> values)
         {
-            foreach (var percentage in values)
+            foreach (var servicePercentagePairs in values)
             {
-                Log.Information("X Reported back: {percentage}", percentage);
+                Log.Information("{service} Reported back: {percentage}", servicePercentagePairs.Key, servicePercentagePairs.Value);
+            }
+        }
+
+        /// <summary>
+        /// Gets the services from the database.
+        /// </summary>
+        /// <returns>The services out of the database.</returns>
+        private static List<Service> GetServices()
+        {
+            using (var context = new MonitorContext())
+            {
+                return context.Services.ToList();
             }
         }
     }

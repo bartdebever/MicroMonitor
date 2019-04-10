@@ -12,29 +12,33 @@ namespace MicroMonitor.MessageQueueUtils
     {
         private List<RabbitMqProducer> _producers;
 
-        private List<RabbitMqReceiver> _receivers;
+        private RabbitMqReceiver _receiver;
 
-        private List<double> _responses;
+        private Dictionary<string, double> _responses;
+
+        private int _responsesReceived = 0;
 
         private Timer _timer;
+
+        private string _aggregationId;
 
         /// <summary>
         /// Action that will be performed at the end of the timer or if all responses are in.
         /// </summary>
-        public Action<List<double>> EndingAction { get; set; }
+        public Action<Dictionary<string, double>> EndingAction { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="RabbitMqScatterGatter"/> class.
         /// Prepares all producers, receivers and the response list.
         /// </summary>
         /// <param name="outgoingQueues">The queues wanting to sent messages out to.</param>
-        /// <param name="intcomingQueues">The queues where responses will be coming back to.</param>
-        public RabbitMqScatterGatter(IEnumerable<string> outgoingQueues, IEnumerable<string> intcomingQueues)
+        /// <param name="incomingQueue">The queue where responses will be coming back to.</param>
+        public RabbitMqScatterGatter(IEnumerable<string> outgoingQueues, string incomingQueue)
         {
             _timer = new Timer();
-            _responses = new List<double>();
+            _responses = new Dictionary<string, double>();
             _producers = new List<RabbitMqProducer>();
-            
+
 
             foreach (var outgoingQueue in outgoingQueues)
             {
@@ -42,19 +46,15 @@ namespace MicroMonitor.MessageQueueUtils
                 producer.Connect();
                 producer.BindQueue(outgoingQueue);
                 _producers.Add(producer);
+
+                // Outgoing queue is the applicationId so this can be used for the key as well.
+                _responses.Add(outgoingQueue, 0);
             }
 
-            _receivers = new List<RabbitMqReceiver>();
-
-            foreach (var incomingQueue in intcomingQueues)
-            {
-                var receiver = new RabbitMqReceiver();
-                receiver.Connect();
-                receiver.BindQueue(incomingQueue);
-                receiver.DeclareReceived(ConsumerReceived);
-
-                _receivers.Add(receiver);
-            }
+            _receiver = new RabbitMqReceiver();
+            _receiver.Connect();
+            _receiver.BindQueue(incomingQueue);
+            _receiver.DeclareReceived(ConsumerReceived);
         }
 
         /// <summary>
@@ -64,6 +64,8 @@ namespace MicroMonitor.MessageQueueUtils
         /// <param name="message">The message wanting to be sent to all queues.</param>
         public void Run<T>(AggregationMessage<T> message) where T : class
         {
+            _aggregationId = message.AggregationId;
+
             foreach (var rabbitMqProducer in _producers)
             {
                 try
@@ -72,7 +74,8 @@ namespace MicroMonitor.MessageQueueUtils
                 }
                 catch
                 {
-
+                    // Negate the failed sends.
+                    //TODO: Later store this somewhere and return it back to the user.
                 }
             }
 
@@ -101,13 +104,24 @@ namespace MicroMonitor.MessageQueueUtils
             var body = args.Body;
             var json = Encoding.UTF8.GetString(body);
 
-            var message = JsonConvert.DeserializeObject<AggregationMessage<double>>(json);
-            if (message == null)
+            if (string.IsNullOrWhiteSpace(json))
             {
                 return;
             }
 
-            _responses.Add(message.Payload);
+            var message = JsonConvert.DeserializeObject<HealthMessage>(json);
+
+            // Check if there is a message, with the needed cirteria and the right aggregationId
+            if (message == null || message.ApplicationId == null || message.AggregationId != _aggregationId)
+            {
+                return;
+            }
+
+            if(_responses.ContainsKey(message.ApplicationId))
+            {
+                _responses[message.ApplicationId] = message.Health;
+                _responsesReceived++;
+            }
 
             // If we don't have all responses yet, return.
             if (_responses.Count != _producers.Count)
@@ -115,6 +129,7 @@ namespace MicroMonitor.MessageQueueUtils
                 return;
             }
             _timer.Stop();
+
             EndingAction.Invoke(_responses);
         }
     }

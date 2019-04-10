@@ -31,5 +31,10 @@
         /// Should only be used by inside services.
         /// </summary>
         public const string IsAuthenticatedReply = "MM_Auth_Reply";
+
+        /// <summary>
+        /// The queue that will receive the health check results.
+        /// </summary>
+        public const string HealthCheckReply = "MM_Health";
     }
 }
