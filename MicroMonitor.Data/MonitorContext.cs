@@ -24,7 +24,7 @@ namespace MicroMonitor.Data
         {
             // Rough hardcoded SQL string for now. Should be moved to configuration if this wasn't a PoC.
             optionsBuilder.UseSqlServer(
-                "Server=DESKTOP-BORT;Database=MicroMonitor;Trusted_Connection=True;MultipleActiveResultSets=true;");
+                "Server=LAPTOP-CKU039EN\\SQLEXPRESS;Database=MicroMonitor;Trusted_Connection=True;MultipleActiveResultSets=true;");
             base.OnConfiguring(optionsBuilder);
         }
 

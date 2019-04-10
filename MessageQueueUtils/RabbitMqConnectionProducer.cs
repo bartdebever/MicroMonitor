@@ -7,7 +7,9 @@ namespace MicroMonitor.MessageQueueUtils
         private readonly ConnectionFactory _connectionFactory;
 
         protected IModel Channel;
-        
+
+        protected string Exchange = string.Empty;
+
         protected IConnection Connection;
 
         /// <summary>
@@ -57,6 +59,17 @@ namespace MicroMonitor.MessageQueueUtils
 
             Channel.Close();
             Connection.Close();
+        }
+
+        /// <summary>
+        /// Declares an exchange that will not autodelete of the type Fanout.
+        /// </summary>
+        /// <param name="exchange">The name of the exchange</param>
+        public void BindExchange(string exchange)
+        {
+            this.Exchange = exchange;
+
+            Channel.ExchangeDeclare(exchange, ExchangeType.Fanout, false, false);
         }
     }
 }

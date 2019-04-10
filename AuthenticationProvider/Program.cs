@@ -28,7 +28,7 @@ namespace AuthenticationProvider
         public static void Main(string[] args)
         {
             ConfigureLogger();
-            Log.Information("Setting up MicroMonitor Authentication Provider");
+            Log.Information("Setting up MicroMonitor Authentication Token Provider");
             SetupAuthProducer();
             SetupAuthReceiver();
 

@@ -23,8 +23,8 @@ namespace TestProject
 
         static void Main(string[] args)
         {
-            Console.WriteLine("Producer");
-            Console.WriteLine("Waiting...");
+            Console.WriteLine("Test Client");
+            Console.WriteLine("Waiting for services to start...\nPress enter when ready.");
             Console.ReadLine();
             authProducer = new RabbitMqProducer();
             authProducer.Connect();
@@ -57,7 +57,7 @@ namespace TestProject
             rabbitMqProducer.Connect();
 
             rabbitMqProducer.BindQueue("MM_Log");
-            Console.WriteLine("Gained token");
+            Console.WriteLine($"Gained token: {token}, Start writing messages.");
             while (true)
             {
                 var message = Console.ReadLine();

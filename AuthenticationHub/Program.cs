@@ -26,7 +26,7 @@ namespace MicroMonitor.AuthenticationHub
         public static void Main(string[] args)
         {
             ConfigureLogger();
-            Log.Information("Starting MicroMonitor Authentication Provider");
+            Log.Information("Starting MicroMonitor Authentication Token Creator");
             SetupConsumer();
 
             _receiver.Run();

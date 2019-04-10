@@ -93,7 +93,7 @@ namespace MicroMonitor.MessageQueueLoggingHub
             _replyReceiver.Connect();
             var faker = new Faker();
             _replyReceiver.BindExchange(StaticQueues.IsAuthenticatedReply);
-            _replyReceiver.BindQueue(faker.Random.AlphaNumeric(15), StaticQueues.IsAuthenticatedReply);
+            _replyReceiver.BindQueue(faker.Random.AlphaNumeric(15));
             _replyReceiver.DeclareReceived(ConsumerOnReceived);
         }
 
@@ -121,8 +121,16 @@ namespace MicroMonitor.MessageQueueLoggingHub
                 return;
             }
 
-            // Add the token to the cache and log the message.
-            _authenticatedTokens.Add(isAuthMessage.Token, isAuthMessage.Service);
+            if (!_authenticatedTokens.ContainsKey(isAuthMessage.Token))
+            {
+                // Add the token to the cache and log the message.
+                _authenticatedTokens.Add(isAuthMessage.Token, isAuthMessage.Service);
+            }
+
+            if (!_unprocessed.ContainsKey(isAuthMessage.CorrelationId))
+            {
+                return;
+            }
 
             var logMessage = _unprocessed[isAuthMessage.CorrelationId];
             _unprocessed.Remove(isAuthMessage.CorrelationId);

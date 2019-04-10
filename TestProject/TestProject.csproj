@@ -6,6 +6,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="NETCore.Encrypt" Version="2.0.7" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\MessageQueueUtils\MicroMonitor.MessageQueueUtils.csproj" />
   </ItemGroup>
 
