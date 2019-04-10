@@ -32,8 +32,11 @@ namespace MicroMonitor.HeathChecks
                 // Generate a pseudorandom Aggregation Id for all the messages.
                 AggregationId = faker.Random.AlphaNumeric(10)
             };
-            
+
+            Log.Information("Ready, press enter to send a message");
+            Console.ReadLine();
             _scatterGatter.Run(message);
+            Console.ReadLine();
         }
 
         /// <summary>
@@ -58,6 +61,14 @@ namespace MicroMonitor.HeathChecks
             {
                 return context.Services.ToList();
             }
+        }
+
+        private static void ConfigureLogger()
+        {
+            Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Debug()
+                .WriteTo.Console()
+                .CreateLogger();
         }
     }
 }

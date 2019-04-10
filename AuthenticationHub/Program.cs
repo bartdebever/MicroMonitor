@@ -109,7 +109,7 @@ namespace MicroMonitor.AuthenticationHub
         /// <param name="service">The service object wanting to be saved.</param>
         private static void SaveService(Service service)
         {
-            Log.Information("Creating new service.");
+            Log.Information("Creating new service for {applicationId}", service.ApplicationId);
             using (var context = new MonitorContext())
             {
                 context.Services.Add(service);

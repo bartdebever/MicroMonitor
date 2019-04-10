@@ -66,6 +66,8 @@ namespace MicroMonitor.MessageQueueUtils
         {
             _aggregationId = message.AggregationId;
 
+            _receiver.Run();
+
             foreach (var rabbitMqProducer in _producers)
             {
                 try
@@ -79,7 +81,7 @@ namespace MicroMonitor.MessageQueueUtils
                 }
             }
 
-            _timer.Interval = 60d;
+            _timer.Interval = 60_000d;
             _timer.Elapsed += TimerOnElapsed;
             _timer.Start();
         }
@@ -91,6 +93,7 @@ namespace MicroMonitor.MessageQueueUtils
         /// <param name="e">The arguments by the</param>
         private void TimerOnElapsed(object sender, ElapsedEventArgs e)
         {
+            _timer.Stop();
             EndingAction.Invoke(_responses);
         }
 
