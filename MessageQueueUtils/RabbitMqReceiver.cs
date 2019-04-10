@@ -47,10 +47,10 @@ namespace MicroMonitor.MessageQueueUtils
         /// <summary>
         /// Declare the method ran when receiving a message.
         /// </summary>
-        /// <param name="fallback">The method wanting to be ran.</param>
-        public void DeclareReceived(EventHandler<BasicDeliverEventArgs> fallback)
+        /// <param name="callback">The method wanting to be ran.</param>
+        public void DeclareReceived(EventHandler<BasicDeliverEventArgs> callback)
         {
-            _consumer.Received += fallback;
+            _consumer.Received += callback;
         }
 
         /// <summary>
