@@ -1,7 +1,10 @@
-﻿using MicroMonitor.MessageQueueUtils;
+﻿using System;
+using MicroMonitor.MessageQueueUtils;
 using RabbitMQ.Client.Events;
 using Serilog;
 using System.Text;
+using Serilog.Events;
+using Serilog.Sinks.Elasticsearch;
 
 namespace MicroMonitor.MessageQueueLoggingHub
 {
@@ -16,7 +19,7 @@ namespace MicroMonitor.MessageQueueLoggingHub
         public static void Main(string[] args)
         {
             _authenticationFlow = new AuthenticationFlow();
-            CreateLogger();
+            CreateLogger(false);
 
             Log.Debug("Starting new Receiver for queue: {0}", StaticQueues.LoggingQueue);
             var rabbitMqReceiver = new RabbitMqReceiver();
@@ -62,12 +65,26 @@ namespace MicroMonitor.MessageQueueLoggingHub
         /// <summary>
         /// Creates a new Serilog logger.
         /// </summary>
-        private static void CreateLogger()
+        private static void CreateLogger(bool useElasticSearch)
         {
-            Log.Logger = new LoggerConfiguration()
+            var elasticOptions = new ElasticsearchSinkOptions(new Uri("http://localhost:9200"))
+            {
+                AutoRegisterTemplate = true,
+                AutoRegisterTemplateVersion = AutoRegisterTemplateVersion.ESv6,
+                MinimumLogEventLevel = LogEventLevel.Information
+            };
+
+            var config = new LoggerConfiguration()
                 .MinimumLevel.Debug()
-                //TODO Add ElasticSearch with Info level.
-                .WriteTo.Console().CreateLogger();
+                .WriteTo.Console();
+
+            if (useElasticSearch)
+            {
+                config = config.WriteTo.Elasticsearch(elasticOptions);
+            }
+
+            Log.Logger = config.CreateLogger();
+
         }
     }
 }
