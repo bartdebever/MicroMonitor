@@ -31,19 +31,11 @@ namespace TestProject
             Console.WriteLine("Waiting for services to start...\nPress enter when ready.");
             Console.ReadLine();
 
-            authProducer = new RabbitMqProducer();
-            authProducer.Connect();
-            authProducer.BindQueue(StaticQueues.RequestAuth);
+            authProducer = RabbitMqProducer.Create(StaticQueues.RequestAuth);
 
-            authReceiver = new RabbitMqReceiver();
-            authReceiver.Connect();
-            authReceiver.BindQueue(APPLICATIONID);
-            authReceiver.DeclareReceived(OnAuthReceived);
-            authReceiver.Run();
+            authReceiver = RabbitMqReceiver.Create(APPLICATIONID, OnAuthReceived);
 
-            var service = new Service();
-            service.ApplicationId = APPLICATIONID;
-            service.GroupId = GROUPID;
+            var service = new Service {ApplicationId = APPLICATIONID, GroupId = GROUPID};
 
             var json = JsonConvert.SerializeObject(service);
 
@@ -59,10 +51,8 @@ namespace TestProject
             var body = args.Body;
             var token = Encoding.UTF8.GetString(body);
 
-            var rabbitMqProducer = new RabbitMqProducer();
-            rabbitMqProducer.Connect();
+            var rabbitMqProducer = RabbitMqProducer.Create(StaticQueues.LoggingQueue);
 
-            rabbitMqProducer.BindQueue("MM_Log");
             Console.WriteLine($"Gained token: {token}, Start writing messages.");
             while (true)
             {

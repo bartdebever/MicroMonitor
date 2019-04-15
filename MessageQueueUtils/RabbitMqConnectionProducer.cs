@@ -10,6 +10,8 @@ namespace MicroMonitor.MessageQueueUtils
 
         protected string Exchange = string.Empty;
 
+        protected string Queue = string.Empty;
+
         protected IConnection Connection;
 
         /// <summary>
@@ -67,9 +69,21 @@ namespace MicroMonitor.MessageQueueUtils
         /// <param name="exchange">The name of the exchange</param>
         public void BindExchange(string exchange)
         {
-            this.Exchange = exchange;
+            Exchange = exchange;
 
             Channel.ExchangeDeclare(exchange, ExchangeType.Fanout, false, false);
+        }
+
+        public virtual void BindQueue(string queue, bool autoDelete = false)
+        {
+            Queue = queue;
+
+            // Declare a non exclusive, non self-deleting queue.
+            Channel.QueueDeclare(queue, false, false, autoDelete);
+            if (!string.IsNullOrWhiteSpace(Exchange))
+            {
+                Channel.QueueBind(queue, Exchange, queue);
+            }
         }
     }
 }

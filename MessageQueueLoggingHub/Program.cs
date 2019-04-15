@@ -22,10 +22,7 @@ namespace MicroMonitor.MessageQueueLoggingHub
             CreateLogger(false);
 
             Log.Debug("Starting new Receiver for queue: {0}", StaticQueues.LoggingQueue);
-            var rabbitMqReceiver = new RabbitMqReceiver();
-            rabbitMqReceiver.Connect();
-            rabbitMqReceiver.BindQueue(StaticQueues.LoggingQueue);
-            rabbitMqReceiver.DeclareReceived(ConsumerOnReceived);
+            var rabbitMqReceiver = RabbitMqReceiver.Create(StaticQueues.LoggingQueue, ConsumerOnReceived);
 
             Log.Debug("Running RabbitMq Logger");
             rabbitMqReceiver.Run();

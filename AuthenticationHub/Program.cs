@@ -27,7 +27,7 @@ namespace MicroMonitor.AuthenticationHub
         {
             ConfigureLogger();
             Log.Information("Starting MicroMonitor Authentication Token Creator");
-            SetupConsumer();
+            _receiver = RabbitMqReceiver.Create(StaticQueues.RequestAuth, ConsumerOnReceived);
 
             _receiver.Run();
             Log.Information("Setup done, waiting for messages.");
@@ -42,28 +42,6 @@ namespace MicroMonitor.AuthenticationHub
                 .MinimumLevel.Debug()
                 .WriteTo.Console()
                 .CreateLogger();
-        }
-
-        /// <summary>
-        /// Sets up the producer to be used.
-        /// </summary>
-        private static RabbitMqProducer SetupProducer(RabbitMqProducer producer, string queue)
-        {
-            producer = new RabbitMqProducer();
-            producer.Connect();
-            producer.BindQueue(queue);
-            return producer;
-        }
-
-        /// <summary>
-        /// Sets up the consumer to be used.
-        /// </summary>
-        private static void SetupConsumer()
-        {
-            _receiver = new RabbitMqReceiver();
-            _receiver.Connect();
-            _receiver.BindQueue(StaticQueues.RequestAuth);
-            _receiver.DeclareReceived(ConsumerOnReceived);
         }
 
         private static void ConsumerOnReceived(object sender, BasicDeliverEventArgs e)
@@ -96,9 +74,7 @@ namespace MicroMonitor.AuthenticationHub
 
             SaveService(service);
 
-            var producer = new RabbitMqProducer();
-            // Assume the service made it's queue and send it away.
-            producer = SetupProducer(producer, service.ApplicationId);
+            var producer = RabbitMqProducer.Create(service.ApplicationId);
 
             producer.SendMessage(token);
         }

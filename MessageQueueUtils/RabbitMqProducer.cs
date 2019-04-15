@@ -12,8 +12,6 @@ namespace MicroMonitor.MessageQueueUtils
 {
     public class RabbitMqProducer : RabbitMqConnectionProducer
     {
-        private string _queue = string.Empty;
-
         /// <inheritdoc />
         public RabbitMqProducer()
         {
@@ -25,22 +23,14 @@ namespace MicroMonitor.MessageQueueUtils
         {
         }
 
-        /// <summary>
-        /// Declares the queue that the messages will be sent to.
-        /// </summary>
-        /// <param name="queue">The queue the messages will be sent to.</param>
-        public void BindQueue(string queue, bool autoDelete = false)
+        public static RabbitMqProducer Create(string queue, string exchange = "", bool autoDelete = false)
         {
-            this._queue = queue;
+            var producer = new RabbitMqProducer();
+            producer.Connect();
+            producer.BindExchange(exchange);
+            producer.BindQueue(queue, autoDelete);
 
-            // Declare a non exclusive, self-deleting queue.
-            Channel.QueueDeclare(queue, false, false, autoDelete);
-
-            if (!string.IsNullOrWhiteSpace(Exchange))
-            {
-                Channel.QueueBind(queue, Exchange, queue);
-            }
-
+            return producer;
         }
 
         /// <summary>
@@ -60,7 +50,7 @@ namespace MicroMonitor.MessageQueueUtils
                 newProperties.Headers = properties.Headers;
             }
 
-            Channel.BasicPublish(Exchange, _queue, newProperties, body);
+            Channel.BasicPublish(Exchange, Queue, newProperties, body);
 
             return newProperties.MessageId;
         }

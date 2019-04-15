@@ -11,8 +11,6 @@ namespace MicroMonitor.MessageQueueUtils
 
         private AsyncEventingBasicConsumer _asyncConsumer;
 
-        private string _queue;
-
         /// <inheritdoc />
         public RabbitMqReceiver()
         {
@@ -24,24 +22,30 @@ namespace MicroMonitor.MessageQueueUtils
         {
         }
 
+        public static RabbitMqReceiver Create(string queue, EventHandler<BasicDeliverEventArgs> callback, string exchange = "", bool autoDelete = false)
+        {
+            var receiver = new RabbitMqReceiver();
+            receiver.Connect();
+            if (!string.IsNullOrWhiteSpace(exchange))
+            {
+                receiver.BindExchange(exchange);
+            }
+
+            receiver.BindQueue(queue, autoDelete);
+            receiver.DeclareReceived(callback);
+
+            return receiver;
+        }
+
         /// <summary>
         /// Binds the receiver to a particular queue.
         /// Creating the queue if it doesn't exist in the process.
         /// </summary>
         /// <param name="queue">The queue wanting to be bound to.</param>
-        /// <param name="exchange">The exchange which the queue is based on.</param>
-        public void BindQueue(string queue)
+        /// <param name="autoDelete">If the queue should be automatically deleted.</param>
+        public override void BindQueue(string queue, bool autoDelete = false)
         {
-            this._queue = queue;
-
-            // Declare a non exclusive, non self-deleting queue.
-
-            Channel.QueueDeclare(queue, false, false, false);
-            if (!string.IsNullOrWhiteSpace(Exchange))
-            {
-                Channel.QueueBind(queue, Exchange, queue);
-            }
-
+            base.BindQueue(queue, autoDelete);
 
             _consumer = new EventingBasicConsumer(Channel);
             _asyncConsumer = new AsyncEventingBasicConsumer(Channel);
@@ -70,7 +74,7 @@ namespace MicroMonitor.MessageQueueUtils
         /// </summary>
         public void Run()
         {
-            Channel.BasicConsume(this._queue, true, _consumer);
+            Channel.BasicConsume(Queue, true, _consumer);
         }
     }
 }

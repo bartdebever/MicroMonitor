@@ -29,8 +29,8 @@ namespace AuthenticationProvider
         {
             ConfigureLogger();
             Log.Information("Setting up MicroMonitor Authentication Token Provider");
-            SetupAuthProducer();
-            SetupAuthReceiver();
+            _authProducer = RabbitMqProducer.Create(string.Empty, StaticQueues.IsAuthenticatedReply);
+            _authReceiver = RabbitMqReceiver.Create(StaticQueues.IsAuthenticated, IsAuthenticatedOnReceived);
 
             _authReceiver.Run();
             Log.Information("Setup complete, waiting for request.");
@@ -47,26 +47,6 @@ namespace AuthenticationProvider
                 .CreateLogger();
         }
 
-        /// <summary>
-        /// Sets up the authentication producer for use.
-        /// </summary>
-        private static void SetupAuthProducer()
-        {
-            _authProducer = new RabbitMqProducer();
-            _authProducer.Connect();
-            _authProducer.BindExchange(StaticQueues.IsAuthenticatedReply);
-        }
-
-        /// <summary>
-        /// Sets up the authentication receiver for use.
-        /// </summary>
-        private static void SetupAuthReceiver()
-        {
-            _authReceiver = new RabbitMqReceiver();
-            _authReceiver.Connect();
-            _authReceiver.BindQueue(StaticQueues.IsAuthenticated);
-            _authReceiver.DeclareReceived(IsAuthenticatedOnReceived);
-        }
 
         /// <summary>
         /// Method called when a new message is in.

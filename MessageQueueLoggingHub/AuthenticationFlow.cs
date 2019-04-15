@@ -6,7 +6,6 @@ using RabbitMQ.Client.Events;
 using Serilog;
 using System.Collections.Generic;
 using System.Text;
-using System.Timers;
 using Bogus;
 using MicroMonitor.MessageQueueUtils.Storage;
 
@@ -23,8 +22,6 @@ namespace MicroMonitor.MessageQueueLoggingHub
 
         private RabbitMqProducer _authSender;
 
-        private Timer _timer;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="AuthenticationFlow"/> class.
         /// </summary>
@@ -32,8 +29,9 @@ namespace MicroMonitor.MessageQueueLoggingHub
         {
             _unprocessed = new Dictionary<string, string>();
             _authenticatedTokens = new Dictionary<string, Service>();
-            SetupSender();
-            SetupReceiver();
+            _authSender = RabbitMqProducer.Create(StaticQueues.IsAuthenticated);
+            var faker = new Faker();
+            _replyReceiver = RabbitMqReceiver.Create(faker.Random.AlphaNumeric(15), ConsumerOnReceived, StaticQueues.IsAuthenticatedReply);
 
             _replyReceiver.Run();
         }
@@ -71,42 +69,20 @@ namespace MicroMonitor.MessageQueueLoggingHub
             var messageObject = JsonConvert.DeserializeObject<LoggingMessage>(message);
             var template = "{Sender} from group {Group}: {Body}";
             var paramValues = new[] {messageObject.Sender, messageObject.Group, messageObject.Body};
+
             switch (messageObject.Level)
             {
-                case LogLevel.Info:
-                    Log.Information(template, paramValues);
-                    break;
                 case LogLevel.Error:
                     Log.Error(template, paramValues);
                     break;
                 case LogLevel.Warning:
                     Log.Warning(template, paramValues);
                     break;
+                case LogLevel.Info:
+                default:
+                    Log.Information(template, paramValues);
+                    break;
             }
-        }
-
-        /// <summary>
-        /// Sets up the authentication producer.
-        /// Sends a request to the authentication service to ask if the token is correct.
-        /// </summary>
-        private void SetupSender()
-        {
-            _authSender = new RabbitMqProducer();
-            _authSender.Connect();
-            _authSender.BindQueue(StaticQueues.IsAuthenticated);
-        }
-
-        /// <summary>
-        /// Sets up the receiver who will catch the authentication service's reply.
-        /// </summary>
-        private void SetupReceiver()
-        {
-            _replyReceiver = new RabbitMqReceiver();
-            _replyReceiver.Connect();
-            var faker = new Faker();
-            _replyReceiver.BindExchange(StaticQueues.IsAuthenticatedReply);
-            _replyReceiver.BindQueue(faker.Random.AlphaNumeric(15));
-            _replyReceiver.DeclareReceived(ConsumerOnReceived);
         }
 
         /// <summary>
