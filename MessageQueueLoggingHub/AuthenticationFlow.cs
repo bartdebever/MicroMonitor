@@ -69,8 +69,20 @@ namespace MicroMonitor.MessageQueueLoggingHub
         private static void LogMessage(string message)
         {
             var messageObject = JsonConvert.DeserializeObject<LoggingMessage>(message);
-            Log.Information("{Sender} from group {Group}: {Body}", 
-                messageObject.Sender, messageObject.Group, messageObject.Body);
+            var template = "{Sender} from group {Group}: {Body}";
+            var paramValues = new[] {messageObject.Sender, messageObject.Group, messageObject.Body};
+            switch (messageObject.Level)
+            {
+                case LogLevel.Info:
+                    Log.Information(template, paramValues);
+                    break;
+                case LogLevel.Error:
+                    Log.Error(template, paramValues);
+                    break;
+                case LogLevel.Warning:
+                    Log.Warning(template, paramValues);
+                    break;
+            }
         }
 
         /// <summary>
