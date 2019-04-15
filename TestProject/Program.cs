@@ -25,19 +25,11 @@ namespace TestProject
 
         private static RabbitMqReceiver authReceiver;
 
-        private static RabbitMqProducer healthCheckProducer;
-
-        private static Thread healthTread;
-
         static void Main(string[] args)
         {
             Console.WriteLine("Test Client");
             Console.WriteLine("Waiting for services to start...\nPress enter when ready.");
             Console.ReadLine();
-
-            //SetupHealthCheck();
-
-            healthTread = new Thread(SetupHealthCheck);
 
             authProducer = new RabbitMqProducer();
             authProducer.Connect();
@@ -72,7 +64,6 @@ namespace TestProject
 
             rabbitMqProducer.BindQueue("MM_Log");
             Console.WriteLine($"Gained token: {token}, Start writing messages.");
-            healthTread.Start();
             while (true)
             {
                 var message = Console.ReadLine();
@@ -90,40 +81,6 @@ namespace TestProject
             }
 
             rabbitMqProducer.Disconnect();
-        }
-
-        private static void SetupHealthCheck()
-        {
-
-            healthCheckProducer = new RabbitMqProducer();
-            healthCheckProducer.Connect();
-            healthCheckProducer.BindQueue(StaticQueues.HealthCheckReply);
-
-            var healthQueue = new RabbitMqReceiver();
-            healthQueue.Connect();
-            healthQueue.BindQueue(APPLICATIONID);
-            healthQueue.DeclareReceived(OnHealthCheckReceived);
-            healthQueue.Run();
-        }
-
-        private static void OnHealthCheckReceived(object sender, BasicDeliverEventArgs args)
-        {
-            var body = args.Body;
-            var json = Encoding.UTF8.GetString(body);
-
-            Console.WriteLine("Healthcheck");
-            // Normally you want to check the message for the action.
-            // Don't care for now as this is the only message that will come in.
-            var aggregatedMessage = JsonConvert.DeserializeObject<AggregationMessage<string>>(json);
-
-            var message = new HealthMessage()
-            {
-                ApplicationId = APPLICATIONID,
-                Health = 100,
-                AggregationId = aggregatedMessage.AggregationId
-            };
-
-            healthCheckProducer.SendObject(message);
         }
     }
 }

@@ -27,8 +27,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MicroMonitor.Authentication
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "2 HeathCheck", "2 HeathCheck", "{328A75D7-C962-4D10-91AD-60E5C1373577}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MicroMonitor.HeathChecks", "MicroMonitor.HeathChecks\MicroMonitor.HeathChecks.csproj", "{67970922-63CC-4D9F-9A92-31F81ADA7807}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -59,10 +57,6 @@ Global
 		{FBA97363-1879-4902-873B-777DF32C894A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FBA97363-1879-4902-873B-777DF32C894A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FBA97363-1879-4902-873B-777DF32C894A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{67970922-63CC-4D9F-9A92-31F81ADA7807}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{67970922-63CC-4D9F-9A92-31F81ADA7807}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{67970922-63CC-4D9F-9A92-31F81ADA7807}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{67970922-63CC-4D9F-9A92-31F81ADA7807}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -74,7 +68,6 @@ Global
 		{7CB9A6A6-4C99-4374-B41F-55798BF659AF} = {A2FD83CC-8F54-4275-A885-FCDB37E06B8D}
 		{386EDEAB-D666-453B-AE08-F65FA3DDDFFC} = {8A6C3BC9-480F-4558-B086-86FD4111E8E3}
 		{FBA97363-1879-4902-873B-777DF32C894A} = {1E5175DF-E36E-4E7C-B71D-D8764AFB44A0}
-		{67970922-63CC-4D9F-9A92-31F81ADA7807} = {328A75D7-C962-4D10-91AD-60E5C1373577}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {3BC3C81E-2BFD-481D-9C34-DCF90ABEB5D0}
