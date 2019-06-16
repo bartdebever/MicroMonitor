@@ -27,8 +27,16 @@ namespace MicroMonitor.MessageQueueUtils
         {
             var producer = new RabbitMqProducer();
             producer.Connect();
-            producer.BindExchange(exchange);
-            producer.BindQueue(queue, autoDelete);
+            if (!string.IsNullOrWhiteSpace(exchange))
+            {
+                producer.BindExchange(exchange);
+            }
+
+            if (!string.IsNullOrWhiteSpace(queue))
+            {
+                producer.BindQueue(queue, autoDelete);
+            }
+
 
             return producer;
         }

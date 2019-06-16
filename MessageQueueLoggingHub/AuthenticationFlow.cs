@@ -25,8 +25,13 @@ namespace MicroMonitor.MessageQueueLoggingHub
         /// <summary>
         /// Initializes a new instance of the <see cref="AuthenticationFlow"/> class.
         /// </summary>
-        public AuthenticationFlow()
+        public AuthenticationFlow(bool useAuthentication)
         {
+            if (!useAuthentication)
+            {
+                return;
+            }
+
             _unprocessed = new Dictionary<string, string>();
             _authenticatedTokens = new Dictionary<string, Service>();
             _authSender = RabbitMqProducer.Create(StaticQueues.IsAuthenticated);
@@ -41,8 +46,14 @@ namespace MicroMonitor.MessageQueueLoggingHub
         /// </summary>
         /// <param name="message">The message received.</param>
         /// <param name="token">The token received.</param>
-        public void CheckAuthentication(string message, string token)
+        public void CheckAuthentication(string message, string token, bool useAuthentication = true)
         {
+            if (!useAuthentication)
+            {
+                LogMessage(message);
+                return;
+            }
+            
             if (string.IsNullOrWhiteSpace(token))
             {
                 throw new ArgumentNullException(nameof(token));
@@ -67,20 +78,19 @@ namespace MicroMonitor.MessageQueueLoggingHub
         private static void LogMessage(string message)
         {
             var messageObject = JsonConvert.DeserializeObject<LoggingMessage>(message);
-            var template = "{Sender} from group {Group}: {Body}";
-            var paramValues = new[] {messageObject.Sender, messageObject.Group, messageObject.Body};
+            const string template = "{Sender} from group {Group}: {Body}";
 
             switch (messageObject.Level)
             {
                 case LogLevel.Error:
-                    Log.Error(template, paramValues);
+                    Log.Error(template, messageObject.Sender, messageObject.Group, messageObject.Body);
                     break;
                 case LogLevel.Warning:
-                    Log.Warning(template, paramValues);
+                    Log.Warning(template, messageObject.Sender, messageObject.Group, messageObject.Body);
                     break;
                 case LogLevel.Info:
                 default:
-                    Log.Information(template, paramValues);
+                    Log.Information(template, messageObject.Sender, messageObject.Group, messageObject.Body);
                     break;
             }
         }

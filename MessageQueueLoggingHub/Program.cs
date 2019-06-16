@@ -3,6 +3,7 @@ using MicroMonitor.MessageQueueUtils;
 using RabbitMQ.Client.Events;
 using Serilog;
 using System.Text;
+using Bogus.Bson;
 using Serilog.Events;
 using Serilog.Sinks.Elasticsearch;
 
@@ -10,6 +11,7 @@ namespace MicroMonitor.MessageQueueLoggingHub
 {
     public class Program
     {
+        private static bool useAuthentication = false;
         private static AuthenticationFlow _authenticationFlow;
 
         /// <summary>
@@ -18,7 +20,7 @@ namespace MicroMonitor.MessageQueueLoggingHub
         /// <param name="args"></param>
         public static void Main(string[] args)
         {
-            _authenticationFlow = new AuthenticationFlow();
+            _authenticationFlow = new AuthenticationFlow(useAuthentication);
             CreateLogger(false);
 
             Log.Debug("Starting new Receiver for queue: {0}", StaticQueues.LoggingQueue);
@@ -38,14 +40,15 @@ namespace MicroMonitor.MessageQueueLoggingHub
             var body = e.Body;
             var message = Encoding.UTF8.GetString(body);
             // Check if the headers are not null and contain the token.
-            if (e.BasicProperties.Headers == null || !e.BasicProperties.Headers.ContainsKey("token"))
+            if ((e.BasicProperties.Headers == null || !e.BasicProperties.Headers.ContainsKey("token")) && useAuthentication)
             {
                 Log.Warning("Request without headers");
                 return;
             }
 
             // Extract the token, convert it to a byte array and read it.
-            var token = e.BasicProperties.Headers["token"];
+            var token = e.BasicProperties?.Headers != null ? e.BasicProperties.Headers["token"] : new byte[0];
+            
 
             if (!(token is byte[] bytes))
             {
@@ -55,7 +58,7 @@ namespace MicroMonitor.MessageQueueLoggingHub
             var stringToken = Encoding.UTF8.GetString(bytes);
 
             // Continue to the authentication flow section.
-            _authenticationFlow.CheckAuthentication(message, stringToken);
+            _authenticationFlow.CheckAuthentication(message, stringToken, useAuthentication);
 
         }
 
